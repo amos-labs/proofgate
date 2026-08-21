@@ -101,5 +101,7 @@
   ],
   "base_sha": "3a543eb2099a5a3f4c7cef15d7dbf222a4d9dd13",
   "diff_sha256": "e2327e1b6424a1f5f5406a63f52e402dbc4962c236999251d4138015be7081e1",
-  "result_summary": "Plumbline now compares canonical real paths when deciding whether its ESM CLI module was invoked directly, so npm/npx node_modules/.bin symlinks execute main() on Node 24 while imports remain side-effect free. Added an end-to-end regression that launches the compiled CLI through a real symlink and rebuilt dist/index.js. Type-check, package build, focused regression, and all 334 compiled tests passed locally; the repository-standard npm test command remains covered by CI."
+  "result_summary": "Plumbline now compares canonical real paths when deciding whether its ESM CLI module was invoked directly, so npm/npx node_modules/.bin symlinks execute main() on Node 24 while imports remain side-effect free. Added an end-to-end regression that launches the compiled CLI through a real symlink and rebuilt dist/index.js. Type-check, package build, focused regression, and all 334 compiled tests passed locally; the repository-standard npm test command remains covered by CI.",
+  "diff_algo": "v1",
+  "_stamped_by": "plumb receipt --write v0.7.3"
 }
