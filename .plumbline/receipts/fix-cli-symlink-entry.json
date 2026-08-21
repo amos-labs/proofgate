@@ -1,0 +1,107 @@
+{
+  "_help": {
+    "_note": "Allowed values + requirements per field (this _help block is ignored by the gate — keep or delete). Run `plumb schema` for the full reference.",
+    "receipt_version": "one of: 1.0 — required — schema version",
+    "task_id": "required — ticket/issue/branch id (also the receipt filename)",
+    "agent_id": "required — which agent or human did the work",
+    "intent": "required — what + why, plain language — the semantic review reads this",
+    "self_modifying": "one of: true | false — required — MUST be true if changed_files touch policy.protected_paths; touching one with false is a hard fail; true routes to human review",
+    "policy_refs": "required — policy/mission docs you read",
+    "validation_plan": "required — each: { command, reason, required, id?, ci_covered? }",
+    "validation_plan[].required": "one of: true | false — required — is this check mandatory",
+    "validation_plan[].id": "optional — optional step id; evidence is matched to it via execution_evidence[].step (robust to a command wording diff)",
+    "validation_plan[].ci_covered": "one of: true | false — optional — step is corroborated by the ci-evidence gate (real CI run), not manual evidence — may be 'skipped'; also auto-recognized when command matches a policy ci_evidence_checks entry",
+    "execution_evidence": "required — each: { command, status, output_ref?, skip_reason?, step? }",
+    "execution_evidence[].status": "one of: passed | failed | skipped — required — required steps must be 'passed' (unless CI-covered); use skip_reason when 'skipped'",
+    "execution_evidence[].step": "optional — optional id of the validation_plan step this evidence is for (matches validation_plan[].id)",
+    "changed_files": "required — set by `plumb receipt --write` — don't hand-edit",
+    "base_sha": "optional — pinned merge-base the diff was computed against — makes gate verification deterministic; set by `plumb receipt --write` — never hand-edit",
+    "diff_sha256": "required — set by `plumb receipt --write` — never hand-edit (computed from base_sha)",
+    "result_summary": "required — what changed + how it was verified"
+  },
+  "receipt_version": "1.0",
+  "task_id": "fix-cli-symlink-entry",
+  "agent_id": "codex",
+  "intent": "Make Plumbline CLI binaries execute reliably when npm or npx launches them through a node_modules/.bin symlink. Node 24 preserves the symlink in process.argv[1] while ESM resolves import.meta.url to the target, so the old string comparison silently skipped main() and returned success without running commands. Canonicalizing both paths preserves import-only behavior while fixing normal package-bin execution.",
+  "self_modifying": false,
+  "policy_refs": [
+    ".plumbline/MISSION.md",
+    ".plumbline/AGENTS.md",
+    "CONTRIBUTING.md"
+  ],
+  "validation_plan": [
+    {
+      "command": "npm run check",
+      "reason": "Type-check the new URL and filesystem path handling plus the exported direct-invocation helper.",
+      "required": true,
+      "id": "typecheck"
+    },
+    {
+      "command": "npm run package",
+      "reason": "Compile sources and rebuild the committed dist/index.js package binary that npm executes.",
+      "required": true,
+      "id": "package"
+    },
+    {
+      "command": "node --test dist/test/cli-symlink-entry.test.js",
+      "reason": "Run the focused regression through an actual filesystem symlink and prove the schema command produces output instead of silently exiting.",
+      "required": true,
+      "id": "symlink-regression"
+    },
+    {
+      "command": "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=commit.gpgsign GIT_CONFIG_VALUE_0=false node --test dist/test/*.test.js",
+      "reason": "Run the complete compiled test suite under Node 24, including temporary git repositories and the new npm-style symlink regression.",
+      "required": true,
+      "id": "full-suite"
+    },
+    {
+      "command": "npm test",
+      "reason": "Corroborate the repository-standard full test command on the CI Node version configured by the test check.",
+      "required": true,
+      "id": "ci-test",
+      "ci_covered": true
+    }
+  ],
+  "execution_evidence": [
+    {
+      "command": "npm run check",
+      "status": "passed",
+      "output_ref": "tsc --noEmit exited 0 with no type errors",
+      "step": "typecheck"
+    },
+    {
+      "command": "npm run package",
+      "status": "passed",
+      "output_ref": "TypeScript compilation and esbuild bundle completed; dist/index.js rebuilt at 300.4kb",
+      "step": "package"
+    },
+    {
+      "command": "node --test dist/test/cli-symlink-entry.test.js",
+      "status": "passed",
+      "output_ref": "1 test passed, 0 failed; schema output was produced through a temporary symlink",
+      "step": "symlink-regression"
+    },
+    {
+      "command": "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=commit.gpgsign GIT_CONFIG_VALUE_0=false node --test dist/test/*.test.js",
+      "status": "passed",
+      "output_ref": "334 tests passed, 0 failed, 0 skipped under Node 24",
+      "step": "full-suite"
+    },
+    {
+      "command": "npm test",
+      "status": "skipped",
+      "skip_reason": "CI-covered by the required test check on the repository's configured Node version",
+      "step": "ci-test"
+    }
+  ],
+  "changed_files": [
+    "dist/index.js",
+    "src/cli.ts",
+    "src/test/cli-symlink-entry.test.ts"
+  ],
+  "base_sha": "3a543eb2099a5a3f4c7cef15d7dbf222a4d9dd13",
+  "diff_sha256": "e2327e1b6424a1f5f5406a63f52e402dbc4962c236999251d4138015be7081e1",
+  "result_summary": "Plumbline now compares canonical real paths when deciding whether its ESM CLI module was invoked directly, so npm/npx node_modules/.bin symlinks execute main() on Node 24 while imports remain side-effect free. Added an end-to-end regression that launches the compiled CLI through a real symlink and rebuilt dist/index.js. Type-check, package build, focused regression, and all 334 compiled tests passed locally; the repository-standard npm test command remains covered by CI.",
+  "diff_algo": "v1",
+  "_stamped_by": "plumb receipt --write v0.7.3"
+}

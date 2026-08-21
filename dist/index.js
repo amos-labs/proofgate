@@ -14,8 +14,16 @@ var require2 = createRequire(import.meta.url);
 var PLUMB_VERSION = require2("../package.json").version;
 
 // src/cli.ts
-import { readFileSync as readFileSync6, writeFileSync as writeFileSync5, existsSync as existsSync7, mkdirSync as mkdirSync5, readdirSync as readdirSync3 } from "node:fs";
+import {
+  readFileSync as readFileSync6,
+  writeFileSync as writeFileSync5,
+  existsSync as existsSync7,
+  mkdirSync as mkdirSync5,
+  readdirSync as readdirSync3,
+  realpathSync
+} from "node:fs";
 import { join as join7, dirname as dirname4 } from "node:path";
+import { fileURLToPath as fileURLToPath2 } from "node:url";
 
 // node_modules/zod/v3/external.js
 var external_exports = {};
@@ -8217,7 +8225,15 @@ Agent work must ship with a proof receipt. See templates/receipt.example.json.`
   }
   return gate.final === "approve" ? 0 : 1;
 }
-var invokedDirectly = process.argv[1] && import.meta.url === `file://${process.argv[1]}`;
+function isDirectInvocation(moduleUrl, entryPath) {
+  if (!entryPath) return false;
+  try {
+    return realpathSync(fileURLToPath2(moduleUrl)) === realpathSync(entryPath);
+  } catch {
+    return false;
+  }
+}
+var invokedDirectly = isDirectInvocation(import.meta.url, process.argv[1]);
 if (invokedDirectly) {
   main().then(
     (code) => process.exit(code),
@@ -8228,5 +8244,6 @@ if (invokedDirectly) {
   );
 }
 export {
+  isDirectInvocation,
   uncommittedReceipts
 };
