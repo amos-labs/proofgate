@@ -1,8 +1,16 @@
 #!/usr/bin/env node
 import { execFileSync } from "node:child_process";
 import { PLUMB_VERSION } from "./version.js";
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  realpathSync,
+} from "node:fs";
 import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { PolicySchema, type GateResult, type Policy, type Receipt, type Verdict } from "./types.js";
 import {
   shapeCheck,
@@ -1592,10 +1600,20 @@ env: ANTHROPIC_API_KEY (default provider), GITHUB_TOKEN + GITHUB_REPOSITORY + PR
 }
 
 // Run as a CLI only when invoked directly (not when imported by a test that
-// wants a pure export like uncommittedReceipts). `import.meta.url` matches the
-// process entry path exactly when this file is the executed script.
-const invokedDirectly =
-  process.argv[1] && import.meta.url === `file://${process.argv[1]}`;
+// wants a pure export like uncommittedReceipts). npm launches package bins via
+// node_modules/.bin symlinks; Node 24 preserves that symlink in process.argv[1]
+// while ESM resolves import.meta.url to the target. Compare canonical paths so
+// those normal npm invocations do not silently exit without running a command.
+export function isDirectInvocation(moduleUrl: string, entryPath: string | undefined): boolean {
+  if (!entryPath) return false;
+  try {
+    return realpathSync(fileURLToPath(moduleUrl)) === realpathSync(entryPath);
+  } catch {
+    return false;
+  }
+}
+
+const invokedDirectly = isDirectInvocation(import.meta.url, process.argv[1]);
 if (invokedDirectly) {
   main().then(
     (code) => process.exit(code),
