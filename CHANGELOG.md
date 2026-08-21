@@ -10,6 +10,24 @@ Consumers should pin a released tag (e.g. `amos-labs/plumbline@v1`) rather than
 
 ## [Unreleased]
 
+## [0.7.4] - 2026-08-21
+
+### Fixed
+
+- **npm and npx package binaries execute correctly through `node_modules/.bin`
+  symlinks on Node 24.** The CLI now compares canonical real paths when deciding
+  whether its ESM entry module was invoked directly. Previously, Node preserved
+  the npm symlink in `process.argv[1]` while resolving `import.meta.url` to the
+  target, so normal commands could exit successfully without running. An
+  end-to-end regression now launches the compiled CLI through a real symlink.
+
+### Security
+
+- **npm lifecycle scripts are disabled for Plumbline installs.** The repository
+  now sets `ignore-scripts=true`, reducing the cross-repository exposure of an
+  npx-invoked governance tool to install-hook supply-chain attacks while keeping
+  the esbuild optional binary and the complete test suite working.
+
 ## [0.7.3] - 2026-08-02
 
 The CLI is reachable again, and an auto-merge no longer swallows your deploy.
@@ -586,7 +604,8 @@ floating `v0` tag: proof-carrying gate for AI agent work — structured receipt,
 deterministic shape check, an LLM semantic review against the repository's mission,
 and a failure-capsule rework loop. Single-repo, GitHub Actions + Anthropic API.
 
-[Unreleased]: https://github.com/amos-labs/plumbline/compare/v0.7.3...HEAD
+[Unreleased]: https://github.com/amos-labs/plumbline/compare/v0.7.4...HEAD
+[0.7.4]: https://github.com/amos-labs/plumbline/compare/v0.7.3...v0.7.4
 [0.7.3]: https://github.com/amos-labs/plumbline/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/amos-labs/plumbline/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/amos-labs/plumbline/compare/v0.7.0...v0.7.1
