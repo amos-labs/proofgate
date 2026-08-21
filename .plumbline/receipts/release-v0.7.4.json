@@ -101,5 +101,7 @@
   ],
   "base_sha": "77fa815e71ee46da9d1e9fbdc99160003c379c08",
   "diff_sha256": "d74da434fe11c22a48bb776a105991aa790c50cf757bbadfc690bf99ba4374e6",
-  "result_summary": "Prepared Plumbline v0.7.4 by bumping package.json and adding dated release notes for the Node 24 npm-bin symlink fix and lifecycle-script hardening, with updated comparison links. The locked install, type-check, package build, and all 334 compiled tests passed locally; the canonical npm test command is additionally bound to CI before the release tag can be pushed."
+  "result_summary": "Prepared Plumbline v0.7.4 by bumping package.json and adding dated release notes for the Node 24 npm-bin symlink fix and lifecycle-script hardening, with updated comparison links. The locked install, type-check, package build, and all 334 compiled tests passed locally; the canonical npm test command is additionally bound to CI before the release tag can be pushed.",
+  "diff_algo": "v1",
+  "_stamped_by": "plumb receipt --write v0.7.4"
 }
