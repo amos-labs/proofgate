@@ -1,0 +1,107 @@
+{
+  "_help": {
+    "_note": "Allowed values + requirements per field (this _help block is ignored by the gate — keep or delete). Run `plumb schema` for the full reference.",
+    "receipt_version": "one of: 1.0 — required — schema version",
+    "task_id": "required — ticket/issue/branch id (also the receipt filename)",
+    "agent_id": "required — which agent or human did the work",
+    "intent": "required — what + why, plain language — the semantic review reads this",
+    "self_modifying": "one of: true | false — required — MUST be true if changed_files touch policy.protected_paths; touching one with false is a hard fail; true routes to human review",
+    "policy_refs": "required — policy/mission docs you read",
+    "validation_plan": "required — each: { command, reason, required, id?, ci_covered? }",
+    "validation_plan[].required": "one of: true | false — required — is this check mandatory",
+    "validation_plan[].id": "optional — optional step id; evidence is matched to it via execution_evidence[].step (robust to a command wording diff)",
+    "validation_plan[].ci_covered": "one of: true | false — optional — step is corroborated by the ci-evidence gate (real CI run), not manual evidence — may be 'skipped'; also auto-recognized when command matches a policy ci_evidence_checks entry",
+    "execution_evidence": "required — each: { command, status, output_ref?, skip_reason?, step? }",
+    "execution_evidence[].status": "one of: passed | failed | skipped — required — required steps must be 'passed' (unless CI-covered); use skip_reason when 'skipped'",
+    "execution_evidence[].step": "optional — optional id of the validation_plan step this evidence is for (matches validation_plan[].id)",
+    "changed_files": "required — set by `plumb receipt --write` — don't hand-edit",
+    "base_sha": "optional — pinned merge-base the diff was computed against — makes gate verification deterministic; set by `plumb receipt --write` — never hand-edit",
+    "diff_sha256": "required — set by `plumb receipt --write` — never hand-edit (computed from base_sha)",
+    "result_summary": "required — what changed + how it was verified"
+  },
+  "receipt_version": "1.0",
+  "task_id": "release-v0.7.4",
+  "agent_id": "codex",
+  "intent": "Prepare the v0.7.4 patch release after the Node 24 npm-symlink fix and npm lifecycle-script hardening landed on master. The release metadata must honestly match the tag, document every change since v0.7.3, and preserve the existing CLI and receipt contracts.",
+  "self_modifying": false,
+  "policy_refs": [
+    ".plumbline/MISSION.md",
+    ".plumbline/AGENTS.md",
+    "CONTRIBUTING.md",
+    "RELEASING.md"
+  ],
+  "validation_plan": [
+    {
+      "command": "npm ci --ignore-scripts",
+      "reason": "Install the exact locked dependency graph with the release's lifecycle-script hardening active.",
+      "required": true,
+      "id": "install"
+    },
+    {
+      "command": "npm run check",
+      "reason": "Type-check the complete v0.7.4 source tree before packaging.",
+      "required": true,
+      "id": "typecheck"
+    },
+    {
+      "command": "npm run package",
+      "reason": "Compile the source and prove the committed distribution bundle remains reproducible for the release.",
+      "required": true,
+      "id": "package"
+    },
+    {
+      "command": "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=commit.gpgsign GIT_CONFIG_VALUE_0=false node --test dist/test/*.test.js",
+      "reason": "Run the complete compiled suite under Node 24, including the npm symlink regression and temporary git fixtures.",
+      "required": true,
+      "id": "full-suite"
+    },
+    {
+      "command": "npm test",
+      "reason": "Corroborate the repository-standard Node 20 test command through the required CI test check before release tagging.",
+      "required": true,
+      "id": "ci-test",
+      "ci_covered": true
+    }
+  ],
+  "execution_evidence": [
+    {
+      "command": "npm ci --ignore-scripts",
+      "status": "passed",
+      "output_ref": "6 packages installed from the lockfile; 0 vulnerabilities",
+      "step": "install"
+    },
+    {
+      "command": "npm run check",
+      "status": "passed",
+      "output_ref": "tsc --noEmit exited 0 with no type errors",
+      "step": "typecheck"
+    },
+    {
+      "command": "npm run package",
+      "status": "passed",
+      "output_ref": "TypeScript build and esbuild bundle completed; dist/index.js 300.4kb",
+      "step": "package"
+    },
+    {
+      "command": "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=commit.gpgsign GIT_CONFIG_VALUE_0=false node --test dist/test/*.test.js",
+      "status": "passed",
+      "output_ref": "334 tests passed, 0 failed, 0 skipped under Node 24",
+      "step": "full-suite"
+    },
+    {
+      "command": "npm test",
+      "status": "skipped",
+      "skip_reason": "CI-covered by the required test check on the repository's configured Node 20 runtime",
+      "step": "ci-test"
+    }
+  ],
+  "changed_files": [
+    "CHANGELOG.md",
+    "package.json"
+  ],
+  "base_sha": "77fa815e71ee46da9d1e9fbdc99160003c379c08",
+  "diff_sha256": "d74da434fe11c22a48bb776a105991aa790c50cf757bbadfc690bf99ba4374e6",
+  "result_summary": "Prepared Plumbline v0.7.4 by bumping package.json and adding dated release notes for the Node 24 npm-bin symlink fix and lifecycle-script hardening, with updated comparison links. The locked install, type-check, package build, and all 334 compiled tests passed locally; the canonical npm test command is additionally bound to CI before the release tag can be pushed.",
+  "diff_algo": "v1",
+  "_stamped_by": "plumb receipt --write v0.7.4"
+}
